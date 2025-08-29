@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us</title>
+  <style>
+    /* ===== Element Selector ===== */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0; /* HEX */
+      margin: 20px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      color: rgb(0, 102, 204); /* RGB */
+      text-align: center;
+    }
+
+    p {
+      color: rgba(50, 50, 50, 0.9); /* RGBA */
+    }
+
+    /* ===== Class Selector ===== */
+    .highlight {
+      background-color: hsl(200, 80%, 90%); /* HSL */
+      padding: 10px;
+      border-left: 4px solid hsl(200, 70%, 40%);
+    }
+
+    /* ===== ID Selector ===== */
+    #team {
+      font-weight: bold;
+      color: #006600;
+    }
+
+    /* ===== Attribute Selector ===== */
+    a[href*="contact"] {
+      color: red;
+      text-decoration: none;
+    }
+
+    /* ===== Pseudo-class Selector ===== */
+    a:hover {
+      color: orange;
+      text-decoration: underline;
+    }
+
+    /* ===== Pseudo-element Selector ===== */
+    p::first-letter {
+      font-size: 2rem;
+      font-weight: bold;
+      color: hsl(300, 70%, 40%);
+    }
+
+    /* ===== Styling Lists ===== */
+    ul {
+      list-style-type: square;
+    }
+
+    ul li {
+      padding: 5px;
+    }
+
+    /* Favorite movie styled differently */
+    .favorite {
+      color: darkred;
+      font-weight: bold;
+      background-color: #ffe5e5;
+    }
+
+    /* Ordered list custom style */
+    ol {
+      background: rgba(0, 128, 255, 0.1);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    ol li {
+      color: #003366;
+      margin: 5px 0;
+      font-style: italic;
+    }
+
+  </style>
+</head>
+<body>
+  <h1>About Us</h1>
+  <p>We are a creative digital company focused on building modern web experiences.</p>
+  <p class="highlight">Our mission is to deliver high-quality projects with innovation and precision.</p>
+  <p id="team">Meet our dedicated team who makes everything possible.</p>
+  <p>For more info, visit our <a href="contact.html">Contact Page</a>.</p>
+
+  <h2>🎬 Favorite Movies</h2>
+  <ul>
+    <li>Inception</li>
+    <li class="favorite">Interstellar</li>
+    <li>The Dark Knight</li>
+    <li>Avengers: Endgame</li>
+  </ul>
+
+  <h2>🌍 Top Cities</h2>
+  <ol>
+    <li>New York</li>
+    <li>Tokyo</li>
+    <li>Paris</li>
+    <li>Dubai</li>
+  </ol>
+</body>
+</html>
