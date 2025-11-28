@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Tic Tac Toe - ES6 Modular</title>
+    <style>
+        body {
+            font-family: Arial;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f4f4f4;
+        }
+
+        .game {
+            text-align: center;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            background: #0d6efd;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game">
+        <h1>Tic Tac Toe</h1>
+        <h2 id="status">Player X Turn</h2>
+        <div class="board" id="board"></div>
+        <button id="reset">Reset Game</button>
+    </div>
+
+    <script type="module">
+        const boardEl = document.getElementById("board");
+        const statusEl = document.getElementById("status");
+        const resetBtn = document.getElementById("reset");
+
+        class TicTacToe {
+            constructor() {
+                this.board = Array(9).fill("");
+                this.current = "X";
+                this.gameOver = false;
+            }
+
+            switchPlayer() {
+                this.current = this.current === "X" ? "O" : "X";
+                statusEl.textContent = `Player ${this.current} Turn`;
+            }
+
+            makeMove(index) {
+                if (this.board[index] || this.gameOver) return;
+                this.board[index] = this.current;
+                this.render();
+                if (this.checkWin()) {
+                    statusEl.textContent = `Player ${this.current} Wins!`;
+                    this.gameOver = true;
+                    return;
+                }
+                if (!this.board.includes("")) {
+                    statusEl.textContent = "It's a Draw!";
+                    this.gameOver = true;
+                    return;
+                }
+                this.switchPlayer();
+            }
+
+            checkWin() {
+                const wins = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+                return wins.some(([a, b, c]) => this.board[a] && this.board[a] === this.board[b] && this.board[a] === this.board[c]);
+            }
+
+            reset() {
+                this.board = Array(9).fill("");
+                this.current = "X";
+                this.gameOver = false;
+                statusEl.textContent = "Player X Turn";
+                this.render();
+            }
+
+            render() {
+                boardEl.innerHTML = "";
+                this.board.forEach((val, idx) => {
+                    const cell = document.createElement("div");
+                    cell.className = "cell";
+                    cell.textContent = val;
+                    cell.addEventListener("click", () => this.makeMove(idx));
+                    boardEl.appendChild(cell);
+                });
+            }
+        }
+
+        const game = new TicTacToe();
+        game.render();
+        resetBtn.onclick = () => game.reset();
+    </script>
+</body>
+
+</html>

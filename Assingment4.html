@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Custom Music Player</title>
+
+<style>
+  body {
+    font-family: Arial;
+    background: #f4f4f4;
+    display: flex;
+    justify-content: center;
+    padding: 30px;
+  }
+
+  .player {
+    background: #fff;
+    padding: 20px;
+    width: 350px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+  }
+
+  .seek-bar {
+    width: 100%;
+  }
+
+  .time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+  }
+
+  li {
+    padding: 8px;
+    background: #f1f5f9;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  li.active {
+    background: #bae6fd;
+  }
+</style>
+</head>
+<body>
+
+<div class="player">
+  <h2>Music Player</h2>
+  
+  <audio id="audio"></audio>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button id="prevBtn">Prev</button>
+    <button id="playBtn">Play</button>
+    <button id="nextBtn">Next</button>
+  </div>
+
+  <!-- Seek Bar -->
+  <input type="range" id="seek" class="seek-bar" value="0" />
+
+  <div class="time">
+    <span id="current">0:00</span>
+    <span id="duration">0:00</span>
+  </div>
+
+  <!-- Playlist -->
+  <ul id="playlist"></ul>
+</div>
+
+<script>
+/* Playlist Array */
+const tracks = [
+  { title: "Track 1", src: "https://www.computerhope.com/jargon/m/example.mp3" },
+  { title: "Track 2", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { title: "Track 3", src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+];
+
+let currentIndex = 0;
+
+const audio = document.getElementById("audio");
+const playBtn = document.getElementById("playBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const seek = document.getElementById("seek");
+const currentTimeEl = document.getElementById("current");
+const durationEl = document.getElementById("duration");
+const playlistEl = document.getElementById("playlist");
+
+/* Load Playlist UI */
+function loadPlaylist() {
+  playlistEl.innerHTML = "";
+  tracks.forEach((track, index) => {
+    const li = document.createElement("li");
+    li.textContent = track.title;
+    if (index === currentIndex) li.classList.add("active");
+    li.onclick = () => loadTrack(index);
+    playlistEl.appendChild(li);
+  });
+}
+
+/* Load Track */
+function loadTrack(index) {
+  currentIndex = index;
+  audio.src = tracks[currentIndex].src;
+  updateActiveTrack();
+  audio.play();
+  playBtn.textContent = "Pause";
+}
+
+/* Update Highlight */
+function updateActiveTrack() {
+  [...playlistEl.children].forEach((li, i) => {
+    li.classList.toggle("active", i === currentIndex);
+  });
+}
+
+/* Play / Pause */
+playBtn.onclick = () => {
+  if (audio.paused) {
+    audio.play();
+    playBtn.textContent = "Pause";
+  } else {
+    audio.pause();
+    playBtn.textContent = "Play";
+  }
+};
+
+/* Next / Previous */
+nextBtn.onclick = () => {
+  currentIndex = (currentIndex + 1) % tracks.length;
+  loadTrack(currentIndex);
+};
+
+prevBtn.onclick = () => {
+  currentIndex = (currentIndex - 1 + tracks.length) % tracks.length;
+  loadTrack(currentIndex);
+};
+
+/* Seek Bar Updates */
+audio.ontimeupdate = () => {
+  seek.value = audio.currentTime;
+  currentTimeEl.textContent = formatTime(audio.currentTime);
+};
+
+/* Update Seek Max Duration */
+audio.onloadedmetadata = () => {
+  seek.max = audio.duration;
+  durationEl.textContent = formatTime(audio.duration);
+};
+
+/* Seek on User Input */
+seek.oninput = () => {
+  audio.currentTime = seek.value;
+};
+
+/* Auto Next */
+audio.onended = () => nextBtn.onclick();
+
+/* Format Time (mm:ss) */
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s < 10 ? "0" + s : s}`;
+}
+
+/* Init */
+loadPlaylist();
+loadTrack(0);
+</script>
+</body>
+</html>

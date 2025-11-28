@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Data Structure Visualizer</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        h2 {
+            margin-top: 30px;
+        }
+
+        input,
+        button,
+        select {
+            padding: 10px;
+            margin: 5px 0;
+        }
+
+        .ds-box {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            min-height: 60px;
+        }
+
+        .item {
+            padding: 10px 15px;
+            background: #0d6efd;
+            color: #fff;
+            border-radius: 6px;
+            opacity: 0;
+            animation: fadeIn .5s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Data Structure Visualizer (Array / Stack / Queue)</h1>
+
+        <h2>Input</h2>
+        <input id="value" placeholder="Enter value" />
+        <select id="dsType">
+            <option value="array">Array</option>
+            <option value="stack">Stack</option>
+            <option value="queue">Queue</option>
+        </select>
+
+        <button onclick="addFront()">Unshift / Push Front</button>
+        <button onclick="addEnd()">Push / Enqueue</button>
+        <button onclick="removeFront()">Shift / Pop Front</button>
+        <button onclick="removeEnd()">Pop / Dequeue</button>
+
+        <h2>Visualization</h2>
+        <div id="visual" class="ds-box"></div>
+    </div>
+
+    <script>
+        let arr = [];
+
+        function render() {
+            const box = document.getElementById("visual");
+            box.innerHTML = "";
+            arr.forEach(v => {
+                const item = document.createElement("div");
+                item.className = "item";
+                item.textContent = v;
+                box.appendChild(item);
+            });
+        }
+
+        function addFront() {
+            const val = document.getElementById("value").value;
+            if (!val) return alert("Enter a value");
+            const type = document.getElementById("dsType").value;
+
+            if (type === "array") arr.unshift(val);
+            if (type === "stack") arr.push(val); // stacks do push only
+            if (type === "queue") arr.unshift(val); // front enqueue alternate
+
+            render();
+        }
+
+        function addEnd() {
+            const val = document.getElementById("value").value;
+            if (!val) return alert("Enter a value");
+            const type = document.getElementById("dsType").value;
+
+            if (type === "array") arr.push(val);
+            if (type === "stack") arr.push(val);
+            if (type === "queue") arr.push(val);
+
+            render();
+        }
+
+        function removeFront() {
+            const type = document.getElementById("dsType").value;
+
+            if (arr.length === 0) return alert("Empty!");
+
+            if (type === "array") arr.shift();
+            if (type === "stack") arr.pop(); // stack pop
+            if (type === "queue") arr.shift();
+
+            render();
+        }
+
+        function removeEnd() {
+            const type = document.getElementById("dsType").value;
+
+            if (arr.length === 0) return alert("Empty!");
+
+            if (type === "array") arr.pop();
+            if (type === "stack") arr.pop();
+            if (type === "queue") arr.shift(); // queue dequeue
+
+            render();
+        }
+    </script>
+</body>
+
+</html>

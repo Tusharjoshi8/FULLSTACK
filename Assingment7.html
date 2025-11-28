@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Number Pattern Generator</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .container {
+    width: 450px;
+    background: #fff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+
+  select, button, input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    border-radius: 5px;
+    border: 1px solid #aaa;
+  }
+
+  button {
+    background: #333;
+    color: white;
+    cursor: pointer;
+  }
+
+  #output {
+    margin-top: 20px;
+    background: #eee;
+    padding: 15px;
+    border-radius: 10px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    font-size: 16px;
+  }
+
+  .row-even { color: #0d6efd; font-weight: bold; }
+  .row-odd { color: #d63384; font-weight: bold; }
+</style>
+
+</head>
+<body>
+
+<div class="container">
+  <h2>Number Pattern Generator</h2>
+
+  <select id="patternType">
+    <option value="triangle">Triangle</option>
+    <option value="pyramid">Pyramid</option>
+    <option value="diamond">Diamond</option>
+  </select>
+
+  <input type="number" id="rows" placeholder="Enter number of rows">
+
+  <button onclick="generatePattern()">Generate Pattern</button>
+
+  <div id="output"></div>
+</div>
+
+<script>
+function generatePattern() {
+  const type = document.getElementById("patternType").value;
+  const rows = Number(document.getElementById("rows").value);
+  const output = document.getElementById("output");
+
+  if (!rows || rows < 1) {
+    output.innerHTML = "Please enter a valid number of rows.";
+    return;
+  }
+
+  let pattern = "";
+
+  if (type === "triangle") pattern = triangle(rows);
+  if (type === "pyramid") pattern = pyramid(rows);
+  if (type === "diamond") pattern = diamond(rows);
+
+  output.innerHTML = pattern;
+}
+
+/* -------- TRIANGLE -------- */
+function triangle(n) {
+  let str = "";
+  for (let i = 1; i <= n; i++) {
+    const colorClass = i % 2 === 0 ? "row-even" : "row-odd";
+    str += `<span class="${colorClass}">${" ".repeat(0)}`;
+    for (let j = 1; j <= i; j++) {
+      str += j + " ";
+    }
+    str += `</span><br>`;
+  }
+  return str;
+}
+
+/* -------- PYRAMID -------- */
+function pyramid(n) {
+  let str = "";
+  for (let i = 1; i <= n; i++) {
+    const colorClass = i % 2 === 0 ? "row-even" : "row-odd";
+    str += `<span class="${colorClass}">${" ".repeat(n - i)}`;
+    for (let j = 1; j <= i; j++) {
+      str += j + " ";
+    }
+    str += `</span><br>`;
+  }
+  return str;
+}
+
+/* -------- DIAMOND -------- */
+function diamond(n) {
+  let str = "";
+
+  // Upper half
+  for (let i = 1; i <= n; i++) {
+    const colorClass = i % 2 === 0 ? "row-even" : "row-odd";
+    str += `<span class="${colorClass}">${" ".repeat(n - i)}`;
+    for (let j = 1; j <= i; j++) {
+      str += j + " ";
+    }
+    str += `</span><br>`;
+  }
+
+  // Lower half
+  for (let i = n - 1; i >= 1; i--) {
+    const colorClass = i % 2 === 0 ? "row-even" : "row-odd";
+    str += `<span class="${colorClass}">${" ".repeat(n - i)}`;
+    for (let j = 1; j <= i; j++) {
+      str += j + " ";
+    }
+    str += `</span><br>`;
+  }
+
+  return str;
+}
+</script>
+
+</body>
+</html>

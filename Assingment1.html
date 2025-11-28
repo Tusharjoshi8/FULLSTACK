@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Task Manager — To‑Do App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .app {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      padding: 8px 12px;
+      background: #4a6cf7;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .new-task {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    input, select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .list {
+      margin-top: 20px;
+    }
+    .task {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafafa;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    .title {
+      font-weight: bold;
+    }
+    .task.completed .title {
+      text-decoration: line-through;
+      color: gray;
+    }
+    .actions button {
+      margin-left: 5px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .chip {
+      padding: 5px 10px;
+      background: #eee;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .filter-list {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+</style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Task Manager">
+    <header>
+      <h1>Task Manager — To‑Do List</h1>
+      <div class="controls">
+        <div class="chip small" id="task-count">0 tasks</div>
+        <button class="btn" id="clear-completed">Clear Completed</button>
+      </div>
+    </header>
+
+    <section class="new-task" aria-label="Add task">
+      <input type="text" id="task-input" placeholder="Add a new task — title #tag (optional)" aria-label="New task title">
+      <input type="date" id="task-date" aria-label="Due date">
+      <button class="btn" id="add-task">Add</button>
+    </section>
+
+    <section style="margin-top:12px; display:flex; gap:8px; align-items:center; justify-content:space-between">
+      <div style="display:flex; gap:8px; align-items:center">
+        <input type="search" id="search" placeholder="Search tasks..." aria-label="Search tasks">
+        <select id="sort" class="chip small" aria-label="Sort tasks">
+          <option value="created_desc">Newest</option>
+          <option value="created_asc">Oldest</option>
+          <option value="due_asc">Due Soon</option>
+          <option value="due_desc">Due Later</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <div class="small">Show completed</div>
+        <label class="switch"><input type="checkbox" id="show-completed"><span class="track"><span class="thumb"></span></span></label>
+      </div>
+    </section>
+
+    <main>
+      <div class="left">
+        <div class="filter-list" role="tablist" aria-label="Quick filters">
+          <button class="chip" data-filter="all">All</button>
+          <button class="chip" data-filter="active">Active</button>
+          <button class="chip" data-filter="completed">Completed</button>
+          <button class="chip" data-filter="today">Due Today</button>
+          <button class="chip" data-filter="week">Due This Week</button>
+        </div>
+
+        <div class="list" id="task-list" aria-live="polite">
+          <!-- tasks injected here -->
+        </div>
+      </div>
+
+      <aside class="right">
+        <div class="card">
+          <h3 style="margin-top:0">Stats</h3>
+          <div class="small">Total: <span id="stat-total">0</span></div>
+          <div class="small">Active: <span id="stat-active">0</span></div>
+          <div class="small">Completed: <span id="stat-completed">0</span></div>
+          <hr style="opacity:0.06"/>
+          <h4 style="margin:6px 0 2px">Tags</h4>
+          <div id="tags" class="filter-list"></div>
+        </div>
+      </aside>
+    </main>
+
+  </div>
+
+  <script>
+    /* Task Manager — Vanilla JS single-file app
+       Features implemented:
+         - Create, Read, Update, Delete (CRUD)
+         - LocalStorage persistence
+         - Event delegation for task actions
+         - Filters (search, quick filters, tag clicking)
+         - Sort and show/hide completed
+         - Inline edit
+    */
+
+    // --- Utilities ---
+    const $ = sel => document.querySelector(sel);
+    const qs = (el, sel) => el.querySelector(sel);
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+
+    // --- State ---
+    let tasks = []; // {id,title,completed,createdAt,due, tags:[]}
+    let filters = { q:'', filter:'all', sort:'created_desc', showCompleted:true };
+
+    // --- Elements ---
+    const input = $('#task-input');
+    const dateInput = $('#task-date');
+    const addBtn = $('#add-task');
+    const list = $('#task-list');
+    const search = $('#search');
+    const sort = $('#sort');
+    const showCompleted = $('#show-completed');
+    const taskCount = $('#task-count');
+    const statTotal = $('#stat-total');
+    const statActive = $('#stat-active');
+    const statCompleted = $('#stat-completed');
+    const tagsContainer = $('#tags');
+    const clearCompleted = $('#clear-completed');
+
+    // --- Persistence ---
+    const STORAGE_KEY = 'taskmanager_v1';
+    function load(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        tasks = raw ? JSON.parse(raw) : [];
+        // revive dates
+        tasks.forEach(t => { t.createdAt = new Date(t.createdAt); t.due = t.due ? new Date(t.due) : null });
+      }catch(e){tasks = []}
+    }
+    function save(){
+      const toSave = tasks.map(t => ({...t, createdAt: t.createdAt.toISOString(), due: t.due ? t.due.toISOString() : null}));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    }
+
+    // --- CRUD ---
+    function createTask(title, due){
+      const t = { id: uid(), title: title.trim(), completed:false, createdAt: new Date(), due: due? new Date(due): null, tags: extractTags(title) };
+      tasks.unshift(t);
+      save(); render();
+    }
+    function updateTask(id, patch){
+      const idx = tasks.findIndex(t=>t.id===id); if(idx===-1) return;
+      tasks[idx] = {...tasks[idx], ...patch};
+      if(patch.title) tasks[idx].tags = extractTags(tasks[idx].title);
+      save(); render();
+    }
+    function deleteTask(id){ tasks = tasks.filter(t=>t.id!==id); save(); render(); }
+
+    // --- Tag extraction ---
+    function extractTags(text){ const re = /#(\w+)/g; const out=[]; let m; while((m=re.exec(text))!==null) out.push(m[1].toLowerCase()); return out }
+
+    // --- Rendering ---
+    function render(){
+      // apply filters
+      const now = new Date();
+      let visible = tasks.slice();
+      // search
+      if(filters.q) visible = visible.filter(t=> t.title.toLowerCase().includes(filters.q.toLowerCase()));
+      // showCompleted
+      if(!filters.showCompleted) visible = visible.filter(t=>!t.completed);
+      // quick filter
+      if(filters.filter==='active') visible = visible.filter(t=>!t.completed);
+      if(filters.filter==='completed') visible = visible.filter(t=>t.completed);
+      if(filters.filter==='today') visible = visible.filter(t=>{ if(!t.due) return false; const d = new Date(t.due); return d.toDateString()===now.toDateString(); });
+      if(filters.filter==='week') visible = visible.filter(t=>{ if(!t.due) return false; const d=new Date(t.due); const diff = Math.ceil((d - new Date(now.getFullYear(), now.getMonth(), now.getDate()))/(1000*60*60*24)); return diff>=0 && diff<7 });
+      // sort
+      if(filters.sort==='created_desc') visible.sort((a,b)=>b.createdAt - a.createdAt);
+      if(filters.sort==='created_asc') visible.sort((a,b)=>a.createdAt - b.createdAt);
+      if(filters.sort==='due_asc') visible.sort((a,b)=> (a.due||Infinity) - (b.due||Infinity) );
+      if(filters.sort==='due_desc') visible.sort((a,b)=> (b.due||0) - (a.due||0) );
+
+      // render list
+      list.innerHTML = '';
+      if(visible.length===0){ list.innerHTML = '<div class="empty">No tasks match your filters.</div>'; }
+      visible.forEach(t=>{
+        const item = document.createElement('div'); item.className='task'+(t.completed?' completed':''); item.dataset.id = t.id;
+        item.innerHTML = `
+          <input type="checkbox" class="task-toggle" ${t.completed? 'checked':''} aria-label="Toggle complete">
+          <div>
+            <div contenteditable="true" class="title editable" data-placeholder="Task title">${escapeHtml(t.title)}</div>
+            <div class="meta small">${t.tags.map(tag=>`<span class="chip">#${tag}</span>`).join(' ')} ${t.due?'<span class="due"> · due '+formatDate(t.due)+'</span>':''}</div>
+          </div>
+          <div class="actions">
+            <button class="icon-btn edit" title="Edit">✏️</button>
+            <button class="icon-btn delete" title="Delete">🗑️</button>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+
+      // stats & tags
+      statTotal.textContent = tasks.length;
+      statCompleted.textContent = tasks.filter(t=>t.completed).length;
+      statActive.textContent = tasks.filter(t=>!t.completed).length;
+      taskCount.textContent = `${tasks.length} tasks`;
+
+      renderTags();
+    }
+
+    function renderTags(){
+      const map = {};
+      tasks.forEach(t=> t.tags.forEach(tag=> map[tag] = (map[tag]||0)+1));
+      tagsContainer.innerHTML = '';
+      const keys = Object.keys(map).sort((a,b)=>map[b]-map[a]);
+      if(keys.length===0) tagsContainer.innerHTML = '<div class="small" style="color:var(--muted)">No tags</div>';
+      keys.forEach(k=>{
+        const b = document.createElement('button'); b.className='chip'; b.textContent = `#${k} (${map[k]})`; b.dataset.tag = k; tagsContainer.appendChild(b);
+      });
+    }
+
+    // --- Helpers ---
+    function formatDate(d){ const dt = new Date(d); return dt.toLocaleDateString(); }
+    function escapeHtml(s){ return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+    // --- Event wiring ---
+    addBtn.addEventListener('click', ()=>{ const t = input.value.trim(); if(!t) return input.focus(); createTask(t, dateInput.value); input.value=''; dateInput.value=''; });
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ addBtn.click(); }});
+    search.addEventListener('input', (e)=>{ filters.q = e.target.value; render(); });
+    sort.addEventListener('change', (e)=>{ filters.sort = e.target.value; render(); });
+    showCompleted.addEventListener('change', (e)=>{ filters.showCompleted = e.target.checked; render(); });
+    clearCompleted.addEventListener('click', ()=>{ tasks = tasks.filter(t=>!t.completed); save(); render(); });
+
+    // Quick filter clicks (event delegation)
+    document.querySelector('.filter-list').addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const f = btn.dataset.filter; if(!f) return;
+      filters.filter = f; render();
+    });
+
+    // Tag clicks
+    tagsContainer.addEventListener('click', (e)=>{
+      const b = e.target.closest('button'); if(!b) return; const tag = b.dataset.tag;
+      filters.q = '#'+tag; search.value = filters.q; render();
+    });
+
+    // Task list event delegation (toggle, delete, inline edit)
+    list.addEventListener('click', (e)=>{
+      const taskEl = e.target.closest('.task'); if(!taskEl) return; const id = taskEl.dataset.id;
+      if(e.target.closest('.delete')){ if(confirm('Delete this task?')) deleteTask(id); return; }
+      if(e.target.classList.contains('task-toggle')){ updateTask(id, { completed: e.target.checked }); return; }
+      if(e.target.closest('.edit')){
+        const titleEl = taskEl.querySelector('.title'); titleEl.focus(); placeCaretAtEnd(titleEl); return;
+      }
+    });
+
+    // handle inline edits (on blur or Enter)
+    list.addEventListener('focusout', (e)=>{
+      const titleEl = e.target.closest('.title'); if(!titleEl) return; const taskEl = titleEl.closest('.task'); const id = taskEl.dataset.id;
+      const text = titleEl.textContent.trim(); if(!text){ // if empty, delete
+        if(confirm('Title is empty — delete task?')) deleteTask(id); else render(); return;
+      }
+      updateTask(id, { title: text });
+    });
+    list.addEventListener('keydown', (e)=>{
+      if(e.target.classList && e.target.classList.contains('title') && e.key==='Enter'){ e.preventDefault(); e.target.blur(); }
+    });
+
+    // helper to put caret at end
+    function placeCaretAtEnd(el){ el.focus(); if(typeof window.getSelection != "undefined" && typeof document.createRange != "undefined"){ const range = document.createRange(); range.selectNodeContents(el); range.collapse(false); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } }
+
+    // load & init
+    load(); render();
+
+    // expose for debugging (optional)
+    window._taskApp = {tasks, createTask, updateTask, deleteTask, save, render};
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Event Listener Assignment</title>
+
+<style>
+  body {
+    font-family: Arial;
+    padding: 20px;
+  }
+
+  #zoom-img {
+    width: 250px;
+    border-radius: 10px;
+    transition: transform 0.3s;
+    cursor: zoom-in;
+    margin-top: 20px;
+  }
+
+  .zoomed {
+    transform: scale(1.5);
+    cursor: zoom-out;
+  }
+
+  #keyBox {
+    width: 250px;
+    padding: 10px;
+    margin-top: 20px;
+    font-size: 16px;
+  }
+
+  #keyOutput {
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 18px;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>Event Listener Practice</h1>
+
+<!-- Click Event -->
+<h2>1. Change Background Color (Click Event)</h2>
+<button id="colorBtn">Change Color</button>
+
+<hr>
+
+<!-- Double Click Zoom -->
+<h2>2. Double-Click to Zoom Image</h2>
+<img id="zoom-img" src="https://via.placeholder.com/250" alt="Demo Image">
+
+<hr>
+
+<!-- Keyboard Listener -->
+<h2>3. Keyboard Key Logger</h2>
+<input type="text" id="keyBox" placeholder="Type something..." />
+<p id="keyOutput">You pressed: </p>
+
+<script>
+/* ------------------------ 1. CLICK EVENT ------------------------ */
+document.getElementById("colorBtn").addEventListener("click", () => {
+  document.body.style.backgroundColor =
+    "#" + Math.floor(Math.random() * 16777215).toString(16); // random color
+});
+
+/* ------------------------ 2. DOUBLE CLICK ZOOM ------------------------ */
+const img = document.getElementById("zoom-img");
+
+img.addEventListener("dblclick", () => {
+  img.classList.toggle("zoomed");
+});
+
+/* ------------------------ 3. KEY LOGGER ------------------------ */
+const inputBox = document.getElementById("keyBox");
+const output = document.getElementById("keyOutput");
+
+inputBox.addEventListener("keydown", (event) => {
+  output.textContent = "You pressed: " + event.key.toUpperCase();
+});
+
+inputBox.addEventListener("keyup", () => {
+  // Optional: can show key released
+});
+</script>
+
+</body>
+</html>

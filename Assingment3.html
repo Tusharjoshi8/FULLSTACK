@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Expense Tracker — Charts</title>
+  <style>
+    /* Simple, clean styles */
+    body{font-family:system-ui,Segoe UI,Roboto,Arial; margin:0; padding:20px; background:#f7fafc; color:#0f1724}
+    .container{max-width:900px;margin:auto;background:#fff;padding:18px;border-radius:8px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+    h1{margin:0 0 12px;font-size:20px}
+    form{display:flex;gap:10px;flex-wrap:wrap}
+    input, select, button{padding:8px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px}
+    input[type=number]{width:120px}
+    input[type=date]{width:150px}
+    .full{flex:1}
+    .actions{display:flex;gap:8px}
+    .list{margin-top:14px}
+    .item{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #f1f5f9}
+    .meta{color:#64748b;font-size:13px}
+    .bad{color:#dc2626}
+    .charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+    canvas{background:#fff;border-radius:6px;padding:6px}
+    @media(max-width:760px){.charts{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Expense Tracker — Data Visualization</h1>
+    <form id="expenseForm" novalidate>
+      <input id="desc" class="full" placeholder="Description (required)" required>
+      <input id="amount" type="number" placeholder="Amount" min="0.01" step="0.01" required>
+      <select id="category">
+        <option value="Food">Food</option>
+        <option value="Transport">Transport</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Bills">Bills</option>
+        <option value="Other">Other</option>
+      </select>
+      <input id="date" type="date" required>
+      <div class="actions">
+        <button id="addBtn" type="submit">Add</button>
+        <button id="clearBtn" type="button">Clear All</button>
+      </div>
+    </form>
+
+    <div class="list" id="list"></div>
+
+    <div class="charts">
+      <div>
+        <h3 style="margin:6px 0">Spending by Category</h3>
+        <canvas id="pieChart" width="400" height="300"></canvas>
+      </div>
+      <div>
+        <h3 style="margin:6px 0">Expenses Over Time</h3>
+        <canvas id="lineChart" width="400" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Using ES6: destructuring, spread operator, arrow functions, const/let
+    const STORAGE_KEY = 'expense_tracker_v1';
+
+    let expenses = [];
+
+    // Elements
+    const form = document.getElementById('expenseForm');
+    const descEl = document.getElementById('desc');
+    const amountEl = document.getElementById('amount');
+    const categoryEl = document.getElementById('category');
+    const dateEl = document.getElementById('date');
+    const listEl = document.getElementById('list');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // Charts
+    let pieChart, lineChart;
+
+    // Helpers
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+    const fmt = (n) => Number(n).toFixed(2);
+
+    // Load
+    function load(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      expenses = raw ? JSON.parse(raw) : [];
+      // revive dates
+      expenses = expenses.map(e=>({...e, date: new Date(e.date)}));
+    }
+    function save(){
+      // save with ISO dates
+      const toSave = expenses.map(e=> ({...e, date: e.date.toISOString()}));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    }
+
+    // Validate and add
+    function addExpense({description, amount, category, date}){
+      // simple validation
+      if(!description || !amount || isNaN(amount) || amount<=0) return {ok:false, message:'Enter valid description and amount'};
+      const item = { id: uid(), description, amount: Number(amount), category, date: new Date(date)};
+      // use spread to add immutably
+      expenses = [item, ...expenses];
+      save(); render();
+      return {ok:true};
+    }
+
+    // Delete
+    function deleteExpense(id){ expenses = expenses.filter(e=> e.id !== id); save(); render(); }
+
+    // Clear
+    clearBtn.addEventListener('click', ()=>{ if(confirm('Clear all expenses?')){ expenses = []; save(); render(); }});
+
+    // Render list and charts
+    function render(){
+      // list
+      if(expenses.length===0){ listEl.innerHTML = '<div class="meta">No expenses yet.</div>'; }
+      else{
+        listEl.innerHTML = expenses.map(e=>{
+          const d = e.date instanceof Date ? e.date.toISOString().slice(0,10) : e.date;
+          return `<div class="item"><div><div><strong>${escapeHtml(e.description)}</strong></div><div class="meta">${e.category} · ${d}</div></div><div><div>₹ ${fmt(e.amount)}</div><div><button data-id="${e.id}" class="del">Delete</button></div></div></div>`
+        }).join('');
+      }
+
+      // attach delete handlers (event delegation could be used instead)
+      document.querySelectorAll('.del').forEach(btn=> btn.addEventListener('click', ()=> deleteExpense(btn.dataset.id)));
+
+      // Charts
+      renderCharts();
+    }
+
+    function renderCharts(){
+      // Category totals (pie)
+      const catMap = expenses.reduce((acc, {category, amount})=>{ acc[category] = (acc[category] || 0) + amount; return acc }, {});
+      const categories = Object.keys(catMap);
+      const catData = categories.map(c=> catMap[c]);
+
+      // Time series (daily totals)
+      const byDate = {};
+      expenses.slice().reverse().forEach(({date, amount})=>{
+        const key = date.toISOString().slice(0,10); // YYYY-MM-DD
+        byDate[key] = (byDate[key] || 0) + amount;
+      });
+      const dates = Object.keys(byDate).sort();
+      const dateData = dates.map(d=> byDate[d]);
+
+      // create/update pie
+      if(!pieChart){
+        pieChart = new Chart(document.getElementById('pieChart'), {
+          type: 'pie',
+          data: { labels: categories, datasets: [{ data: catData }] },
+          options: { responsive:true, plugins:{legend:{position:'bottom'}} }
+        });
+      } else {
+        pieChart.data.labels = categories;
+        pieChart.data.datasets[0].data = catData;
+        pieChart.update();
+      }
+
+      // create/update line
+      if(!lineChart){
+        lineChart = new Chart(document.getElementById('lineChart'), {
+          type: 'line',
+          data: { labels: dates, datasets: [{ label: 'Daily Spend', data: dateData, fill:false, tension:0.2 }] },
+          options: { responsive:true, scales:{x:{title:{display:true,text:'Date'}}, y:{title:{display:true,text:'Amount'}}}, plugins:{legend:{display:false}} }
+        });
+      } else {
+        lineChart.data.labels = dates;
+        lineChart.data.datasets[0].data = dateData;
+        lineChart.update();
+      }
+    }
+
+    // Escape HTML
+    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+    // Form submit
+    form.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      // destructuring from elements
+      const { value: description } = descEl;
+      const { value: amount } = amountEl;
+      const { value: category } = categoryEl;
+      const { value: date } = dateEl;
+
+      const res = addExpense({description, amount, category, date});
+      if(!res.ok){ alert(res.message); return; }
+      form.reset();
+    });
+
+    // init today date default
+    dateEl.value = new Date().toISOString().slice(0,10);
+
+    // initial load
+    load(); render();
+
+    // expose for debugging
+    window._exp = { expenses };
+  </script>
+</body>
+</html>
